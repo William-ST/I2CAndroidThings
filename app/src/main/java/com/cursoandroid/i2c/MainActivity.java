@@ -12,6 +12,8 @@ import com.google.android.things.pio.PeripheralManager;
 import java.io.IOException;
 import java.util.List;
 
+import nz.geek.android.things.drivers.adc.I2cAdc;
+
 /**
  * Skeleton of an Android Things activity.
  * <p>
@@ -33,6 +35,8 @@ import java.util.List;
  */
 public class MainActivity extends Activity {
 
+    private final String TAG = MainActivity.class.getCanonicalName();
+    /*
     private static final byte ACTIVA_SALIDA = 0x40; // 0100 00 00
     private static final byte AUTOINCREMENTO = 0x04; // 0000 01 00
     private static final byte ENTRADA_0 = 0x00; // 0000 00 00
@@ -43,12 +47,19 @@ public class MainActivity extends Activity {
     private static final String IN_I2C_NOMBRE = "I2C1"; // Puerto de entrada
     private static final int IN_I2C_DIRECCION = 0x48; // Dirección de entrada
     private I2cDevice i2c;
-    private final String TAG = MainActivity.class.getCanonicalName();
     byte[] buffer = new byte[5];
+    */
+    private I2cAdc adc;
+    private Handler handler = new Handler();
+    private Runnable runnable = new UpdateRunner();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        I2cAdc.I2cAdcBuilder builder = I2cAdc.builder();
+        adc = builder.address(0).fourSingleEnded().withConversionRate(100).build(); adc.startConversions();
+        handler.post(runnable);
+        /*
         PeripheralManager manager = PeripheralManager.getInstance();
         List<String> listaDispositivos = manager.getI2cBusList();
         Log.d(TAG, "=== ListaDispositivos === ");
@@ -62,7 +73,6 @@ public class MainActivity extends Activity {
             config[1] = (byte) 0x80; // valor de salida (128/255)
             i2c.write(config, config.length);// escribimos 2 bytes
             read();
-            /*
             i2c.read(buffer, buffer.length); // leemos 5 bytes
             String s = "";
             for (int i = 0; i < buffer.length; i++) {
@@ -71,11 +81,21 @@ public class MainActivity extends Activity {
             Log.d(TAG, s); // mostramos salida
             i2c.close(); // cerramos i2c
             i2c = null; // liberamos memoria
-            */
         } catch (IOException e) {
             Log.e(TAG, "Error en al acceder a dispositivo I2C", e);
         }
+        */
     }
+
+    private class UpdateRunner implements Runnable { @Override public void run() {
+        String s ="";
+        for (int i=0; i<=3; i++) {
+            s += " canal "+i+": "+adc.readChannel(i); }
+        Log.d(TAG, s);
+        handler.postDelayed(this, 1000); }
+    }
+
+    /*
 
     private void read() {
         new Handler().postDelayed(new Runnable() {
@@ -101,10 +121,13 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         super.onDestroy();
         try {
-            i2c.close(); // cerramos i2c
-            i2c = null; // liberamos memoria
+            if (i2c != null) {
+                i2c.close(); // cerramos i2c
+                i2c = null; // liberamos memoria
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+    */
 }
